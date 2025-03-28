@@ -1,197 +1,134 @@
-import React, { useContext, useState, useRef } from 'react'
-import { assets } from "../assets/assets.js"
-import { useNavigate } from "react-router-dom"
-import { AppContent } from "../context/AppContext.jsx"
-import axios from "axios"
-import { toast } from "react-toastify"
+import React, {useContext, useState} from 'react'
+import {assets} from "../assets/assets.js";
+import {useNavigate} from "react-router-dom";
+import {AppContent} from "../context/AppContext.jsx";
+import axios from "axios";
+import {toast} from "react-toastify";
 
-const ResetPassword = () => {
-    const { backendUrl } = useContext(AppContent)
+const ResetPassword = ()=>{
+    const {backendUrl}= useContext(AppContent)
+    axios.defaults.withCredentials=true
     const navigate = useNavigate()
-    const [email, setEmail] = useState('')
-    const [newPassword, setNewPassword] = useState('')
-    const [isEmailSent, setIsEmailSent] = useState(false)
-    const [otp, setOtp] = useState('')
-    const [isOtpSubmitted, setIsOtpSubmitted] = useState(false)
-    const inputRefs = useRef(Array(6).fill(null))
-
-    const handleInput = (e, index) => {
-        const value = e.target.value
-        if (value && index < 5) {
-            inputRefs.current[index + 1].focus()
+    const [email,setEmail]=useState('')
+    const inputRefs= React.useRef([])
+    const [newpassword,setNewPassword] = useState('')
+    const [isEmailSent,setIsEmailSent] = useState(false)
+    const [otp,setOtp] = useState('')
+    const [isOtpSubmitted,setIsOtpSubmitted] = useState(false)
+    const handleInput=(e,index)=>{
+        if(e.target.value.length>0 && index < inputRefs.current.length -1){
+            inputRefs.current[index+1].focus()
         }
     }
-
-    const handleKeyDown = (e, index) => {
-        if (e.key === 'Backspace' && !e.target.value && index > 0) {
-            inputRefs.current[index - 1].focus()
+    const handleKeyDown = (e,index)=>{
+        if(e.key==='Backspace' && e.target.value==='' && index > 0){
+            inputRefs.current[index-1].focus()
         }
     }
-
-    const handlePaste = (e) => {
-        e.preventDefault()
-        const pasteData = e.clipboardData.getData('text').slice(0, 6)
-        pasteData.split('').forEach((char, i) => {
-            if (inputRefs.current[i]) {
-                inputRefs.current[i].value = char
-                const event = new Event('input', { bubbles: true })
-                inputRefs.current[i].dispatchEvent(event)
+    const handlePaste=(e)=>{
+        const paste = e.clipboardData.getData('text')
+        const pasteArray=paste.split('')
+        pasteArray.forEach((char,index)=>{
+            if(inputRefs.current[index]){
+                inputRefs.current[index].value = char
             }
         })
     }
 
-    const handleSubmitEmail = async (e) => {
-        e.preventDefault()
-        if (!email.trim()) {
-            toast.error('Veuillez entrer votre adresse email')
-            return
-        }
+    const onSubmitEmail=async (e)=>{
+        e.preventDefault();
 
         try {
-            const { data } = await axios.post(`${backendUrl}/api/auth/sendreset`, { email })
-            if (data.success) {
-                toast.success('Un code de vérification a été envoyé à votre email')
-                setIsEmailSent(true)
-            } else {
-                toast.error(data.message || 'Erreur lors de l\'envoi du code')
-            }
+            const {data} = await axios.post(backendUrl + '/api/auth/sendreset',{email})
+            data.success ? toast.success(data.message) : toast.error(data.message)
+            data.success && setIsEmailSent(true)
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Erreur de connexion au serveur')
+            toast.error(error.message)
         }
     }
 
-    const handleSubmitOtp = async (e) => {
+    const onSubmitOtp = async (e)=>{
         e.preventDefault()
-        const otpCode = inputRefs.current.map(input => input.value).join('')
-
-        if (otpCode.length !== 6) {
-            toast.error('Veuillez entrer les 6 chiffres du code reçu')
-            return
-        }
-
-        setOtp(otpCode)
+        const otpArray=inputRefs.current.map(e=>e.value)
+        setOtp(otpArray.join(''))
         setIsOtpSubmitted(true)
-        toast.success('Code validé avec succès')
     }
-
-    const handleSubmitNewPassword = async (e) => {
+    const onSubmitNewPassword = async (e) => {
         e.preventDefault()
-        const missingFields = []
-        if (!email) missingFields.push('Email')
-        if (!otp) missingFields.push('Code OTP')
-        if (!newPassword) missingFields.push('Nouveau mot de passe')
-
-        if (missingFields.length > 0) {
-            toast.error(`Champs manquants : ${missingFields.join(', ')}`)
+        if (!email || !otp || !newpassword) {
+            toast.error("Veuillez remplir tous les champs")
             return
         }
-
         try {
-            const { data } = await axios.post(`${backendUrl}/api/auth/resetpwd`, {
+            const {data} = await axios.post(backendUrl + '/api/auth/resetpwd', {
                 email,
                 otp,
-                newpassword: newPassword
+                newPassword: newpassword
             })
-
-            if (data.success) {
-                toast.success('Mot de passe réinitialisé avec succès!')
-                navigate('/login')
-            } else {
-                toast.error(data.message || 'Échec de la réinitialisation')
-            }
+            data.success ? toast.success(data.message) : toast.error(data.message)
+            data.success && navigate('/login')
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Erreur lors de la réinitialisation')
+            toast.error(error.message)
         }
     }
+    return(
+        <div className='flex  items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400'>
+            <img onClick={()=>navigate('/')} src={assets.logo} alt="" className='absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer'/>
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-200 to-purple-400">
-            <img
-                src={assets.logo}
-                alt="Logo"
-                className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
-                onClick={() => navigate('/')}
-            />
-
-            {!isEmailSent && (
-                <form onSubmit={handleSubmitEmail} className="bg-slate-900 p-8 rounded-lg shadow-lg w-96">
-                    <h2 className="text-white text-2xl font-bold mb-4 text-center">Réinitialisation de mot de passe</h2>
-                    <div className="mb-6">
-                        <label className="block text-gray-300 text-sm mb-2">Adresse Email</label>
-                        <div className="flex items-center gap-3 p-3 rounded-full bg-[#333A5C]">
-                            <img src={assets.mail_icon} alt="Email" className="w-4 h-4" />
-                            <input
-                                type="email"
-                                placeholder="exemple@domain.com"
-                                className="w-full bg-transparent outline-none text-white"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
+            {!isEmailSent &&
+                <form onSubmit={onSubmitEmail} className='bg-slate-900 p-8 rounded-lg shadow-lg w-96 text-sm' >
+                    <h1 className='text-white text-2xl font-semibold text-center mb-4'>Reset Password</h1>
+                    <p className='text-center mb-6 text-indigo-300'>Enter your Email Address</p>
+                    <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
+                        <img src={assets.mail_icon} alt="" className="w-3 h-3"/>
+                        <input type="email" placeholder="ex.waelbenyoussef@domain.com"
+                               className="bg-transparent outline-none text-white"
+                               value={email}
+                               onChange={e=>setEmail(e.target.value)}
+                               required
+                        />
                     </div>
-                    <button
-                        type="submit"
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-colors"
-                    >
-                        Envoyer le code
-                    </button>
+                    <button className='w-full py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white rounded-full mt-3'>Submit</button>
                 </form>
-            )}
+            }
 
-            {isEmailSent && !isOtpSubmitted && (
-                <form onSubmit={handleSubmitOtp} className="bg-slate-900 p-8 rounded-lg shadow-lg w-96">
-                    <h2 className="text-white text-2xl font-bold mb-4 text-center">Vérification du code</h2>
-                    <p className="text-gray-300 text-sm mb-6 text-center">
-                        Entrez le code à 6 chiffres reçu par email
-                    </p>
-                    <div className="flex justify-between mb-8" onPaste={handlePaste}>
-                        {[...Array(6)].map((_, index) => (
-                            <input
-                                key={index}
-                                type="text"
-                                maxLength="1"
-                                className="w-12 h-12 text-center text-xl bg-[#333A5C] text-white rounded-md"
-                                ref={(el) => (inputRefs.current[index] = el)}
-                                onInput={(e) => handleInput(e, index)}
-                                onKeyDown={(e) => handleKeyDown(e, index)}
-                            />
-                        ))}
-                    </div>
-                    <button
-                        type="submit"
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-colors"
-                    >
-                        Vérifier le code
-                    </button>
-                </form>
-            )}
 
-            {isOtpSubmitted && isEmailSent && (
-                <form onSubmit={handleSubmitNewPassword} className="bg-slate-900 p-8 rounded-lg shadow-lg w-96">
-                    <h2 className="text-white text-2xl font-bold mb-4 text-center">Nouveau mot de passe</h2>
-                    <div className="mb-6">
-                        <label className="block text-gray-300 text-sm mb-2">Nouveau mot de passe</label>
-                        <div className="flex items-center gap-3 p-3 rounded-full bg-[#333A5C]">
-                            <img src={assets.lock_icon} alt="Mot de passe" className="w-4 h-4" />
-                            <input
-                                type="password"
-                                placeholder="••••••••"
-                                className="w-full bg-transparent outline-none text-white"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                            />
-                        </div>
+            {!isOtpSubmitted  && isEmailSent &&
+                <form onSubmit={onSubmitOtp} className='bg-slate-900 p-8 rounded-lg shadow-lg w-96 text-sm'>
+                    <h1 className='text-white text-2xl font-semibold text-center mb-4'>Reset password</h1>
+                    <p className='text-center mb-6 text-indigo-300'>Enter the 6-digit Code sent to your Email</p>
+                    <div className='flex justify-between mb-8' onPaste={handlePaste}>
+                        {Array(6).fill(0).map((_,index)=>(
+                                <input type="text" maxLength="1" key={index} required
+                                       className="w-12 h-12 bg-[#333A5C] text-white text-center text-xl rounded-md"
+                                       ref={e=>inputRefs.current[index]=e}
+                                       onInput={(e)=>handleInput(e,index) }
+                                       onKeyDown={(e)=>handleKeyDown(e,index)}/>
+                            )
+                        )}
                     </div>
-                    <button
-                        type="submit"
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-colors"
-                    >
-                        Réinitialiser le mot de passe
-                    </button>
+                    <button className='w-full py-2.5 bg-gradient-to-r from indigo-500 to-indigo-900 text-white rounded-full'>Submit</button>
+                </form>}
+            {isOtpSubmitted && isEmailSent &&
+                <form onSubmit={onSubmitNewPassword} className='bg-slate-900 p-8 rounded-lg shadow-lg w-96 text-sm' >
+                    <h1 className='text-white text-2xl font-semibold text-center mb-4'>New Password</h1>
+                    <p className='text-center mb-6 text-indigo-300'>Enter your New  Password</p>
+                    <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
+                        <img src={assets.lock_icon} alt="" className="w-3 h-3"/>
+                        <input type="password" placeholder="ex.psswd123?"
+                               className="bg-transparent outline-none text-white"
+                               value={newpassword}
+                               onChange={e=>setNewPassword(e.target.value)}
+                               required
+                        />
+                    </div>
+                    <button className='w-full py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-900 text-white rounded-full mt-3'>Submit</button>
                 </form>
-            )}
+            }
+
         </div>
     )
 }
+
 
 export default ResetPassword
