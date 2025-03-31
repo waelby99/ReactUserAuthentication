@@ -1,4 +1,4 @@
-# AuthApp Frontend
+# AuthAppFrontend
 
 ## 📋 Description
 AuthApp Frontend est une interface utilisateur moderne développée avec React et Vite qui se connecte au backend AuthAppBackend. Cette application offre une expérience utilisateur fluide pour l'authentification, la vérification d'email et la gestion de compte, avec un design responsive réalisé avec Tailwind CSS.
