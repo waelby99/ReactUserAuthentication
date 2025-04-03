@@ -16,7 +16,7 @@ AuthApp Frontend est une interface utilisateur moderne développée avec React e
   - Interface utilisateur intuitive et accessible
   - Navigation fluide entre les pages
 
-- **État d'application géré**
+- **État d'appplication géré**
   - Gestion du contexte avec React Context API
   - État de connexion persistant
   - Récupération et stockage des données utilisateur
